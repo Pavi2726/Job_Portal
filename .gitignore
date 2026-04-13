@@ -1,0 +1,41 @@
+# Python
+
+**pycache**/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environment
+
+venv/
+
+# Environment Variables
+
+.env
+
+# Database
+
+*.db
+
+# ML / Vector files (FAISS)
+
+*.faiss
+*.pkl
+
+# Node (Frontend)
+
+node_modules/
+
+# Build files
+
+dist/
+build/
+
+# VS Code
+
+.vscode/
+
+# OS files
+
+.DS_Store
+Thumbs.db
