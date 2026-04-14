@@ -10,6 +10,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [selectedRole, setSelectedRole] = useState(null);
   const from = location.state?.from?.pathname || null;
 
   async function handleSubmit(e) {
@@ -22,6 +23,39 @@ export default function Login() {
     if (!result.success) { setError(result.error || "Login failed."); return; }
     navigate(from || "/", { replace: true });
   }
+
+  const roles = [
+    {
+      key: 'candidate',
+      icon: '🧑',
+      label: 'Candidate',
+      desc: 'Find jobs and apply with your resume',
+      color: '#60a5fa',
+      bg: 'rgba(96,165,250,0.08)',
+      border: 'rgba(96,165,250,0.25)',
+      activeBorder: '#60a5fa',
+    },
+    {
+      key: 'recruiter',
+      icon: '🏢',
+      label: 'Recruiter',
+      desc: 'Post jobs and find top talent using AI',
+      color: '#f59e0b',
+      bg: 'rgba(245,158,11,0.08)',
+      border: 'rgba(245,158,11,0.25)',
+      activeBorder: '#f59e0b',
+    },
+    {
+      key: 'admin',
+      icon: '🔑',
+      label: 'Admin',
+      desc: 'Manage platform and view analytics',
+      color: '#a78bfa',
+      bg: 'rgba(167,139,250,0.08)',
+      border: 'rgba(167,139,250,0.25)',
+      activeBorder: '#a78bfa',
+    },
+  ]
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0f1e', display: 'flex' }}>
@@ -75,16 +109,43 @@ export default function Login() {
 
       {/* Right panel */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
-        <div style={{ width: '100%', maxWidth: 400 }} className="fade-up">
+        <div style={{ width: '100%', maxWidth: 420 }} className="fade-up">
           <h1 style={{ fontFamily: 'Syne', fontSize: 32, fontWeight: 800, color: '#f0f4ff', marginBottom: 8 }}>
             Welcome back
           </h1>
-          <p style={{ color: '#8892a4', fontSize: 14, marginBottom: 32 }}>
+          <p style={{ color: '#8892a4', fontSize: 14, marginBottom: 24 }}>
             New here?{" "}
             <Link to="/register" style={{ color: '#00d4b4', textDecoration: 'none', fontWeight: 600 }}>
               Create an account
             </Link>
           </p>
+
+          {/* Role Selection */}
+          <p style={{ color: '#8892a4', fontSize: 13, marginBottom: 10 }}>Sign in as</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 24 }}>
+            {roles.map(r => (
+              <button
+                key={r.key}
+                onClick={() => setSelectedRole(r.key)}
+                style={{
+                  background: selectedRole === r.key ? r.bg : 'rgba(255,255,255,0.02)',
+                  border: `1.5px solid ${selectedRole === r.key ? r.activeBorder : '#1e2d45'}`,
+                  borderRadius: 12,
+                  padding: '14px 8px',
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 6,
+                }}>
+                <span style={{ fontSize: 22 }}>{r.icon}</span>
+                <p style={{ fontFamily: 'Syne', fontWeight: 700, color: selectedRole === r.key ? r.color : '#f0f4ff', fontSize: 13 }}>{r.label}</p>
+                <p style={{ color: '#4a5568', fontSize: 10, lineHeight: 1.4 }}>{r.desc}</p>
+              </button>
+            ))}
+          </div>
 
           {error && (
             <div style={{ background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', color: '#f87171', borderRadius: 8, padding: '12px 16px', fontSize: 14, marginBottom: 20 }}>
@@ -106,16 +167,32 @@ export default function Login() {
                   onChange={(e) => { setPassword(e.target.value); setError(""); }}
                   placeholder="Your password" autoComplete="current-password" />
               </div>
-              <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', padding: 13 }}>
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn-primary"
+                style={{ width: '100%', padding: 13 }}>
                 {loading ? (
                   <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                     <span style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid #0a0f1e', borderTopColor: 'transparent', display: 'inline-block', animation: 'spin 0.8s linear infinite' }} />
                     Signing in…
                   </span>
-                ) : "Sign In"}
+                ) : (
+                  selectedRole
+                    ? `Sign In as ${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)}`
+                    : "Sign In"
+                )}
               </button>
             </form>
           </div>
+
+          {/* Role hint */}
+          {selectedRole && (
+            <p style={{ color: '#4a5568', fontSize: 12, textAlign: 'center', marginTop: 12 }}>
+              Make sure you are using your <span style={{ color: roles.find(r => r.key === selectedRole)?.color }}>{selectedRole}</span> account credentials
+            </p>
+          )}
+
         </div>
       </div>
     </div>

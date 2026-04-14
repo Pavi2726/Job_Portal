@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from app.api.dependencies import get_db, require_role
-from app.models.schema import User, Job, JobApplication, UserRole
+from app.models.schema import User, Job, JobApplication, UserRole, ApplicationStatus, RecruiterProfile
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -52,24 +52,31 @@ def get_platform_stats(db: Session = Depends(get_db)):
         User.role == UserRole.RECRUITER
     ).scalar()
     total_jobs = db.query(func.count(Job.id)).scalar()
-    active_jobs = db.query(func.count(Job.id)).filter(Job.is_active == True).scalar()
+    active_jobs = db.query(func.count(Job.id)).filter(
+        Job.is_active == True
+    ).scalar()
     inactive_jobs = total_jobs - active_jobs
     total_applications = db.query(func.count(JobApplication.id)).scalar()
 
     shortlisted = db.query(func.count(JobApplication.id)).filter(
-        JobApplication.status == "shortlisted"
+        JobApplication.status == ApplicationStatus.SHORTLISTED
     ).scalar()
     rejected = db.query(func.count(JobApplication.id)).filter(
-        JobApplication.status == "rejected"
+        JobApplication.status == ApplicationStatus.REJECTED
     ).scalar()
     applied = db.query(func.count(JobApplication.id)).filter(
-        JobApplication.status == "applied"
+        JobApplication.status == ApplicationStatus.APPLIED
     ).scalar()
 
     top_recruiters = (
-        db.query(User.first_name, User.last_name, User.email,
-                 func.count(Job.id).label("job_count"))
-        .join(Job, Job.recruiter_id == User.id)
+        db.query(
+            User.first_name,
+            User.last_name,
+            User.email,
+            func.count(Job.id).label("job_count")
+        )
+        .join(RecruiterProfile, RecruiterProfile.id == User.id)
+        .join(Job, Job.recruiter_id == RecruiterProfile.id)
         .group_by(User.id)
         .order_by(func.count(Job.id).desc())
         .limit(5)
@@ -77,7 +84,10 @@ def get_platform_stats(db: Session = Depends(get_db)):
     )
 
     most_applied = (
-        db.query(Job.title, func.count(JobApplication.id).label("app_count"))
+        db.query(
+            Job.title,
+            func.count(JobApplication.id).label("app_count")
+        )
         .join(JobApplication, JobApplication.job_id == Job.id)
         .group_by(Job.id)
         .order_by(func.count(JobApplication.id).desc())
