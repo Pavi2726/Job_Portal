@@ -34,7 +34,10 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+    "http://localhost:5173",
+    "https://proud-hill-09b92be1e.7.azurestaticapps.net"
+],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
