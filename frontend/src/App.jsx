@@ -13,6 +13,7 @@ import PostJob from "./pages/PostJob";
 import ResumeUpload from "./pages/ResumeUpload";
 import SearchCandidates from "./pages/SearchCandidates";
 import SavedJobs from "./pages/SavedJobs";
+import AllApplicants from "./pages/AllApplicants";
 import Navbar from "./components/Navbar";
 
 function FullPageLoader() {
@@ -124,7 +125,9 @@ export default function App() {
           <Route path="/post-job" element={
             <RecruiterRoute><Layout><PostJob /></Layout></RecruiterRoute>
           } />
-
+          <Route path="/recruiter/applicants" element={
+  <RecruiterRoute><Layout><AllApplicants /></Layout></RecruiterRoute>
+} />
           {/* Admin only */}
           <Route path="/admin/dashboard" element={
             <AdminRoute><Layout><AdminDashboard /></Layout></AdminRoute>

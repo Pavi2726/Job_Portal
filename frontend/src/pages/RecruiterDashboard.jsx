@@ -13,6 +13,12 @@ export default function RecruiterDashboard() {
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
+  // Edit state
+  const [editingJob, setEditingJob] = useState(null);
+  const [editForm, setEditForm] = useState({ title: "", description: "", requirements: "" });
+  const [editError, setEditError] = useState("");
+  const [editSubmitting, setEditSubmitting] = useState(false);
+
   // Side panel state
   const [selectedJob, setSelectedJob] = useState(null);
   const [applicants, setApplicants] = useState([]);
@@ -43,6 +49,20 @@ export default function RecruiterDashboard() {
       fetchJobs();
     } catch (err) { setFormError(err.userMessage || "Failed to create job."); }
     finally { setSubmitting(false); }
+  }
+
+  async function handleEditJob(e) {
+    e.preventDefault();
+    if (!editForm.title.trim()) { setEditError("Title is required."); return; }
+    if (!editForm.description.trim()) { setEditError("Description is required."); return; }
+    if (!editForm.requirements.trim()) { setEditError("Requirements are required."); return; }
+    setEditSubmitting(true); setEditError("");
+    try {
+      await apiClient.patch(`/jobs/${editingJob.job_id}`, editForm);
+      setEditingJob(null);
+      fetchJobs();
+    } catch (err) { setEditError(err.userMessage || "Failed to update job."); }
+    finally { setEditSubmitting(false); }
   }
 
   async function handleDelete(jobId) {
@@ -183,9 +203,8 @@ export default function RecruiterDashboard() {
                   <tr key={job.job_id}
                     style={{ borderBottom: '1px solid #1e2d45', background: selectedJob?.job_id === job.job_id ? '#162030' : 'transparent', transition: 'background 0.2s' }}>
                     <td style={{ padding: '16px 24px' }}>
-                      {/* Clickable title opens panel */}
                       <button onClick={() => openPanel(job)}
-                        style={{ fontWeight: 600, color: selectedJob?.job_id === job.job_id ? '#00d4b4' : '#f0f4ff', textDecoration: 'none', fontSize: 14, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}>
+                        style={{ fontWeight: 600, color: selectedJob?.job_id === job.job_id ? '#00d4b4' : '#f0f4ff', fontSize: 14, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}>
                         {job.title}
                       </button>
                     </td>
@@ -199,14 +218,35 @@ export default function RecruiterDashboard() {
                     <td style={{ padding: '16px 24px', color: '#4a5568', fontSize: 13 }}>{new Date(job.created_at).toLocaleDateString()}</td>
                     <td style={{ padding: '16px 24px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+
+                        {/* View Applicants */}
+                        <button onClick={() => openPanel(job)}
+                          style={{ color: '#00d4b4', fontSize: 12, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Syne', fontWeight: 600 }}>
+                          👥 Applicants
+                        </button>
+
+                        {/* Edit */}
+                        <button onClick={() => {
+                          setEditingJob(job);
+                          setEditForm({ title: job.title, description: job.description, requirements: job.requirements });
+                          setEditError("");
+                        }}
+                          style={{ color: '#f59e0b', fontSize: 12, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Syne', fontWeight: 600 }}>
+                          ✏️ Edit
+                        </button>
+
+                        {/* Toggle Active */}
                         <button onClick={() => handleToggleActive(job.job_id, job.is_active)}
                           style={{ color: job.is_active ? '#f59e0b' : '#00d4b4', fontSize: 12, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Syne', fontWeight: 600 }}>
                           {job.is_active ? 'Deactivate' : 'Activate'}
                         </button>
+
+                        {/* Delete */}
                         <button onClick={() => handleDelete(job.job_id)} disabled={deletingId === job.job_id}
                           style={{ color: '#f87171', fontSize: 12, background: 'none', border: 'none', cursor: 'pointer', opacity: deletingId === job.job_id ? 0.5 : 1, fontFamily: 'Syne', fontWeight: 600 }}>
                           {deletingId === job.job_id ? 'Deleting…' : 'Delete'}
                         </button>
+
                       </div>
                     </td>
                   </tr>
@@ -217,46 +257,27 @@ export default function RecruiterDashboard() {
         </div>
       </div>
 
-      {/* ── Side Panel ── */}
+      {/* Side Panel */}
       {selectedJob && (
         <>
-          {/* Backdrop */}
           <div onClick={() => setSelectedJob(null)}
             style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 40 }} />
-
-          {/* Panel */}
-          <div style={{
-            position: 'fixed', top: 0, right: 0, bottom: 0,
-            width: 480, background: '#111827',
-            borderLeft: '1px solid #1e2d45',
-            zIndex: 50, overflowY: 'auto',
-            animation: 'slideIn 0.25s ease'
-          }}>
+          <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 480, background: '#111827', borderLeft: '1px solid #1e2d45', zIndex: 50, overflowY: 'auto', animation: 'slideIn 0.25s ease' }}>
             <style>{`@keyframes slideIn { from { transform: translateX(100%) } to { transform: translateX(0) } }`}</style>
-
-            {/* Panel Header */}
             <div style={{ padding: '20px 24px', borderBottom: '1px solid #1e2d45', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', position: 'sticky', top: 0, background: '#111827', zIndex: 1 }}>
               <div>
                 <p style={{ color: '#00d4b4', fontSize: 11, fontFamily: 'Syne', fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>Applicants</p>
                 <h2 style={{ fontFamily: 'Syne', fontSize: 18, fontWeight: 700, color: '#f0f4ff' }}>{selectedJob.title}</h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
-                  <span className={selectedJob.is_active ? 'badge badge-green' : 'badge'}
-                    style={!selectedJob.is_active ? { background: '#1a2236', color: '#4a5568', border: '1px solid #1e2d45' } : {}}>
-                    {selectedJob.is_active ? 'Active' : 'Inactive'}
-                  </span>
-                  <span style={{ color: '#4a5568', fontSize: 12 }}>
-                    {applicants.length} applicant{applicants.length !== 1 ? 's' : ''}
-                  </span>
+                  <span style={{ color: '#4a5568', fontSize: 12 }}>{applicants.length} applicant{applicants.length !== 1 ? 's' : ''}</span>
                 </div>
               </div>
               <button onClick={() => setSelectedJob(null)}
                 style={{ color: '#4a5568', fontSize: 24, background: 'none', border: 'none', cursor: 'pointer', lineHeight: 1, padding: 4 }}>×</button>
             </div>
-
-            {/* Panel Body */}
             <div style={{ padding: 24 }}>
               {panelLoading ? (
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '48px 0', gap: 8, color: '#4a5568', fontSize: 14 }}>
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '48px 0', gap: 8, color: '#4a5568', fontSize: 14 }}>
                   <div style={{ width: 20, height: 20, borderRadius: '50%', border: '2px solid #00d4b4', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
                   Loading applicants…
                 </div>
@@ -272,80 +293,43 @@ export default function RecruiterDashboard() {
                     const appId = a.id || a.application_id
                     const statusVal = a.status?.value || a.status || 'applied'
                     const sc = statusColor[statusVal] || statusColor.applied
-
                     return (
                       <div key={appId} style={{ background: '#0a0f1e', border: '1px solid #1e2d45', borderRadius: 12, padding: 16 }}>
-                        {/* Candidate info */}
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <div style={{ width: 36, height: 36, background: 'rgba(0,212,180,0.08)', border: '1px solid rgba(0,212,180,0.25)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne', fontWeight: 700, color: '#00d4b4', fontSize: 13, flexShrink: 0 }}>
+                            <div style={{ width: 36, height: 36, background: 'rgba(0,212,180,0.08)', border: '1px solid rgba(0,212,180,0.25)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne', fontWeight: 700, color: '#00d4b4', fontSize: 13 }}>
                               #{i + 1}
                             </div>
                             <div>
                               <p style={{ fontFamily: 'Syne', fontWeight: 700, color: '#f0f4ff', fontSize: 14 }}>
-                                {a.candidate_name || a.first_name
-                                  ? `${a.first_name || ''} ${a.last_name || ''}`.trim()
-                                  : `Candidate ${i + 1}`}
+                                {a.first_name ? `${a.first_name} ${a.last_name || ''}`.trim() : `Candidate ${i + 1}`}
                               </p>
-                              <p style={{ color: '#4a5568', fontSize: 12 }}>
-                                Applied {new Date(a.applied_at).toLocaleDateString()}
-                              </p>
+                              <p style={{ color: '#4a5568', fontSize: 12 }}>Applied {new Date(a.applied_at).toLocaleDateString()}</p>
                             </div>
                           </div>
-
-                          {/* Match score */}
                           {a.semantic_match_score != null && (
                             <div style={{ textAlign: 'center' }}>
-                              <p style={{ fontFamily: 'Syne', fontWeight: 800, color: '#00d4b4', fontSize: 18 }}>
-                                {Math.round(a.semantic_match_score * 100)}%
-                              </p>
+                              <p style={{ fontFamily: 'Syne', fontWeight: 800, color: '#00d4b4', fontSize: 18 }}>{Math.round(a.semantic_match_score * 100)}%</p>
                               <p style={{ color: '#4a5568', fontSize: 11 }}>match</p>
                             </div>
                           )}
                         </div>
-
-                        {/* Current status */}
                         <div style={{ marginBottom: 12 }}>
-                          <span style={{ background: sc.bg, color: sc.color, border: `1px solid ${sc.border}`, fontSize: 11, fontWeight: 600, fontFamily: 'Syne', padding: '3px 10px', borderRadius: 20, letterSpacing: 0.5 }}>
+                          <span style={{ background: sc.bg, color: sc.color, border: `1px solid ${sc.border}`, fontSize: 11, fontWeight: 600, fontFamily: 'Syne', padding: '3px 10px', borderRadius: 20 }}>
                             {statusVal}
                           </span>
                         </div>
-
-                        {/* Action buttons */}
                         <div style={{ display: 'flex', gap: 8 }}>
-                          <button
-                            onClick={() => updateStatus(appId, 'shortlisted')}
-                            disabled={updatingId === appId || statusVal === 'shortlisted'}
-                            style={{
-                              flex: 1, padding: '7px 0', fontSize: 12, borderRadius: 8, cursor: statusVal === 'shortlisted' ? 'default' : 'pointer',
-                              border: '1px solid rgba(0,212,180,0.3)',
-                              background: statusVal === 'shortlisted' ? 'rgba(0,212,180,0.15)' : 'rgba(0,212,180,0.05)',
-                              color: '#00d4b4', fontFamily: 'Syne', fontWeight: 600,
-                              opacity: updatingId === appId ? 0.5 : 1, transition: 'all 0.2s'
-                            }}>
+                          <button onClick={() => updateStatus(appId, 'shortlisted')} disabled={updatingId === appId || statusVal === 'shortlisted'}
+                            style={{ flex: 1, padding: '7px 0', fontSize: 12, borderRadius: 8, cursor: statusVal === 'shortlisted' ? 'default' : 'pointer', border: '1px solid rgba(0,212,180,0.3)', background: statusVal === 'shortlisted' ? 'rgba(0,212,180,0.15)' : 'rgba(0,212,180,0.05)', color: '#00d4b4', fontFamily: 'Syne', fontWeight: 600, opacity: updatingId === appId ? 0.5 : 1 }}>
                             ⭐ Shortlist
                           </button>
-                          <button
-                            onClick={() => updateStatus(appId, 'rejected')}
-                            disabled={updatingId === appId || statusVal === 'rejected'}
-                            style={{
-                              flex: 1, padding: '7px 0', fontSize: 12, borderRadius: 8, cursor: statusVal === 'rejected' ? 'default' : 'pointer',
-                              border: '1px solid rgba(248,113,113,0.3)',
-                              background: statusVal === 'rejected' ? 'rgba(248,113,113,0.15)' : 'rgba(248,113,113,0.05)',
-                              color: '#f87171', fontFamily: 'Syne', fontWeight: 600,
-                              opacity: updatingId === appId ? 0.5 : 1, transition: 'all 0.2s'
-                            }}>
+                          <button onClick={() => updateStatus(appId, 'rejected')} disabled={updatingId === appId || statusVal === 'rejected'}
+                            style={{ flex: 1, padding: '7px 0', fontSize: 12, borderRadius: 8, cursor: statusVal === 'rejected' ? 'default' : 'pointer', border: '1px solid rgba(248,113,113,0.3)', background: statusVal === 'rejected' ? 'rgba(248,113,113,0.15)' : 'rgba(248,113,113,0.05)', color: '#f87171', fontFamily: 'Syne', fontWeight: 600, opacity: updatingId === appId ? 0.5 : 1 }}>
                             ✕ Reject
                           </button>
-                          <button
-                            onClick={() => updateStatus(appId, 'applied')}
-                            disabled={updatingId === appId || statusVal === 'applied'}
-                            style={{
-                              padding: '7px 12px', fontSize: 12, borderRadius: 8, cursor: statusVal === 'applied' ? 'default' : 'pointer',
-                              border: '1px solid #1e2d45', background: 'transparent',
-                              color: '#4a5568', fontFamily: 'Syne', fontWeight: 600,
-                              opacity: updatingId === appId ? 0.5 : 1, transition: 'all 0.2s'
-                            }}>
+                          <button onClick={() => updateStatus(appId, 'applied')} disabled={updatingId === appId || statusVal === 'applied'}
+                            style={{ padding: '7px 12px', fontSize: 12, borderRadius: 8, border: '1px solid #1e2d45', background: 'transparent', color: '#4a5568', fontFamily: 'Syne', fontWeight: 600, opacity: updatingId === appId ? 0.5 : 1 }}>
                             ↺
                           </button>
                         </div>
@@ -365,24 +349,21 @@ export default function RecruiterDashboard() {
           <div style={{ background: '#111827', border: '1px solid rgba(0,212,180,0.25)', borderRadius: 16, width: '100%', maxWidth: 520 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', borderBottom: '1px solid #1e2d45' }}>
               <h3 style={{ fontFamily: 'Syne', fontWeight: 700, color: '#f0f4ff', fontSize: 16 }}>Post a New Job</h3>
-              <button onClick={() => { setShowModal(false); setFormError(''); }}
-                style={{ color: '#4a5568', fontSize: 22, background: 'none', border: 'none', cursor: 'pointer', lineHeight: 1 }}>×</button>
+              <button onClick={() => { setShowModal(false); setFormError(''); }} style={{ color: '#4a5568', fontSize: 22, background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
             </div>
             <form onSubmit={handleCreateJob} style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {formError && (
-                <div style={{ background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', color: '#f87171', borderRadius: 8, padding: '12px 16px', fontSize: 14 }}>{formError}</div>
-              )}
+              {formError && <div style={{ background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', color: '#f87171', borderRadius: 8, padding: '12px 16px', fontSize: 14 }}>{formError}</div>}
               <div>
                 <label style={{ color: '#8892a4', fontSize: 13, display: 'block', marginBottom: 6 }}>Job Title</label>
                 <input className="input" type="text" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Senior React Developer" />
               </div>
               <div>
                 <label style={{ color: '#8892a4', fontSize: 13, display: 'block', marginBottom: 6 }}>Description</label>
-                <textarea className="input" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Describe the role and responsibilities…" rows={3} style={{ resize: 'none' }} />
+                <textarea className="input" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Describe the role…" rows={3} style={{ resize: 'none' }} />
               </div>
               <div>
                 <label style={{ color: '#8892a4', fontSize: 13, display: 'block', marginBottom: 6 }}>Requirements</label>
-                <textarea className="input" value={form.requirements} onChange={(e) => setForm({ ...form, requirements: e.target.value })} placeholder="e.g. 3+ years React, TypeScript, REST APIs…" rows={3} style={{ resize: 'none' }} />
+                <textarea className="input" value={form.requirements} onChange={(e) => setForm({ ...form, requirements: e.target.value })} placeholder="e.g. 3+ years React…" rows={3} style={{ resize: 'none' }} />
               </div>
               <div style={{ display: 'flex', gap: 12, paddingTop: 4 }}>
                 <button type="button" className="btn-ghost" style={{ flex: 1 }} onClick={() => { setShowModal(false); setFormError(''); }}>Cancel</button>
@@ -392,6 +373,40 @@ export default function RecruiterDashboard() {
           </div>
         </div>
       )}
+
+      {/* Edit Job Modal */}
+      {editingJob && (
+        <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '0 16px', background: 'rgba(0,0,0,0.75)' }}>
+          <div style={{ background: '#111827', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 16, width: '100%', maxWidth: 520 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', borderBottom: '1px solid #1e2d45' }}>
+              <h3 style={{ fontFamily: 'Syne', fontWeight: 700, color: '#f0f4ff', fontSize: 16 }}>✏️ Edit Job</h3>
+              <button onClick={() => { setEditingJob(null); setEditError(''); }} style={{ color: '#4a5568', fontSize: 22, background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
+            </div>
+            <form onSubmit={handleEditJob} style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {editError && <div style={{ background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', color: '#f87171', borderRadius: 8, padding: '12px 16px', fontSize: 14 }}>{editError}</div>}
+              <div>
+                <label style={{ color: '#8892a4', fontSize: 13, display: 'block', marginBottom: 6 }}>Job Title</label>
+                <input className="input" type="text" value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} />
+              </div>
+              <div>
+                <label style={{ color: '#8892a4', fontSize: 13, display: 'block', marginBottom: 6 }}>Description</label>
+                <textarea className="input" value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} rows={3} style={{ resize: 'none' }} />
+              </div>
+              <div>
+                <label style={{ color: '#8892a4', fontSize: 13, display: 'block', marginBottom: 6 }}>Requirements</label>
+                <textarea className="input" value={editForm.requirements} onChange={(e) => setEditForm({ ...editForm, requirements: e.target.value })} rows={3} style={{ resize: 'none' }} />
+              </div>
+              <div style={{ display: 'flex', gap: 12, paddingTop: 4 }}>
+                <button type="button" className="btn-ghost" style={{ flex: 1 }} onClick={() => { setEditingJob(null); setEditError(''); }}>Cancel</button>
+                <button type="submit" disabled={editSubmitting} style={{ flex: 1, padding: '10px 0', borderRadius: 10, background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.35)', color: '#f59e0b', fontFamily: 'Syne', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+                  {editSubmitting ? 'Saving…' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

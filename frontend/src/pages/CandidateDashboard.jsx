@@ -110,7 +110,7 @@ export default function CandidateDashboard() {
                         <p style={{ color: '#8892a4', fontSize: 13, marginBottom: 4 }}>{a.company_name}</p>
                         <p style={{ color: '#4a5568', fontSize: 12 }}>{new Date(a.applied_at).toLocaleDateString()}</p>
                       </div>
-                      <div style={{ display: 'flex', flex: 'column', alignItems: 'flex-end', gap: 6 }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
                         <span className={statusStyle[statusVal] || 'badge badge-blue'}>
                           {statusVal === 'shortlisted' ? '⭐ shortlisted' :
                            statusVal === 'rejected' ? '✕ rejected' :
